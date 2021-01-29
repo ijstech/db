@@ -1,0 +1,14 @@
+{
+    "name": "@ijstech/db",
+    "description": "Database plugin",
+    "version": "0.0.1",
+    "dependencies": {
+        "mysql": "2.18.1"
+    },
+    "author": "https://ijs.network",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/ijstech/db"
+    }
+}
