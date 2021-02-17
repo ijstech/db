@@ -1,7 +1,7 @@
 {
     "name": "@ijstech/db",
-    "description": "Database plugin",
-    "version": "0.0.1",
+    "description": "Database Plugin for IJS Secure Node",
+    "version": "0.1.0",
     "dependencies": {
         "mysql": "2.18.1"
     },

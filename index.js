@@ -48,6 +48,7 @@ module.exports = {
                     })
                 })        
             },
+            $$beginTransaction: true,
             beginTransaction: function(db){
                 return new Promise(function(resolve, reject){
                     var connection = getConnection(db);
@@ -59,6 +60,7 @@ module.exports = {
                     })	
                 })
             },
+            $$commit: true,
             commit: function(db){
                 return new Promise(function(resolve, reject){
                     var connection = getConnection(db);
@@ -70,6 +72,7 @@ module.exports = {
                     })	
                 })
             },
+            $$rollback: true,
             rollback: function(db){
                 return new Promise(function(resolve, reject){
                     var connection = getConnection(db);
