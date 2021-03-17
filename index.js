@@ -1,7 +1,25 @@
-const Stie = require('@ijstech/site');
 const Mysql = require('mysql');
 var Options = {};
 
+function getConnection(dbName){
+    let opt = Options.$$default;
+    if (opt){
+        if (opt.type == 'mysql')
+            return Mysql.createConnection({
+                host: opt.host,
+                port: opt.port,
+                password: opt.password,
+                user: dbName,
+                database: dbName
+            });   
+    }    
+}
+function getServerType(dbName){
+    let opt = Options.$$default;
+    if (opt){
+        return opt.type
+    }  
+}
 module.exports = {
     _init: function(options){
         Options = options;        
@@ -108,5 +126,7 @@ module.exports = {
     },
     getDatabase: function(name){        
         return Options[name];
-    }
+    },
+    getConnection: getConnection,
+    getServerType: getServerType
 }
