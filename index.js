@@ -2,17 +2,43 @@ const Mysql = require('mysql');
 var Options = {};
 
 function getConnection(dbName){
-    let opt = Options.$$default;
-    if (opt){
-        if (opt.type == 'mysql')
-            return Mysql.createConnection({
-                host: opt.host,
-                port: opt.port,
-                password: opt.password,
-                user: dbName,
-                database: dbName
-            });   
+    if (Options[dbName]){
+        if (Options[dbName].type == 'mysql')
+            return Mysql.createConnection(Options[dbName]);   
+    }
+    else {
+        let opt = Options.$$default;
+        if (opt){
+            if (opt.type == 'mysql')
+                return Mysql.createConnection({
+                    host: opt.host,
+                    port: opt.port,
+                    password: opt.password,
+                    user: dbName,
+                    database: dbName
+                });   
+        }    
     }    
+}
+function query(dbName, sql, params){
+    return new Promise(function(resolve, reject){
+        let connection = getConnection(dbName);
+        if (connection){
+            try{
+                connection.query(sql, params, function(err, result){
+                    if (err)
+                        reject(err)
+                    else
+                        resolve(result);
+                })
+            }
+            finally{
+                connection.end();
+            }
+        }    
+        else
+            reject('$db_not_defined')
+    })
 }
 function getServerType(dbName){
     let opt = Options.$$default;
@@ -127,6 +153,7 @@ module.exports = {
     getDatabase: function(name){        
         return Options[name];
     },
+    query: query,
     getConnection: getConnection,
     getServerType: getServerType
 }
