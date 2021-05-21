@@ -52,21 +52,26 @@ module.exports = {
     },    
     _plugin: async function(vm, ctx, site){
         let self = this;        
-        var connections = {};        
-        function getConnection(db){            
+        let connections = {};        
+        function getConnection(db){
+            let dbConfig;
             if (db){
                 if ((Array.isArray(site.db) && site.db.indexOf(db) > -1) || site.db == db)
-                    var dbConfig = Options[db]
+                    dbConfig = Options[db]
             }
-            else{
+            else if (ctx){
                 db = ctx.package.db[0] || site.db[0]
-                var dbConfig = Options[db];
+                dbConfig = Options[db];
             }
+            else if (site && site.database){
+                db = site.database;
+                dbConfig = Options[db];                
+            }            
             if (dbConfig){
                 if (connections[db])
                     return connections[db]
                 else{
-                    var connection = Mysql.createConnection(dbConfig);   	
+                    let connection = Mysql.createConnection(dbConfig);   	
                     connections[db] = connection;
                     return connection;
                 }
@@ -74,28 +79,49 @@ module.exports = {
         }
         function releaseConnections(){
             for (let v in connections){
-                connections[v].end();
+                try{
+                    connections[v].end();
+                }
+                catch(err){}
                 delete connections[v];
             }            
         }
-        ctx.res.on('close', releaseConnections);
+        function releaseConnection(name){            
+            if (connections[name]){
+                try{
+                    connections[name].end();
+                }
+                catch(err){}
+                delete connections[name];
+            }
+            else if (!name)
+                releaseConnections();
+        };        
+        vm.on('destroy', function(){
+            releaseConnections()
+        });          
         vm.injectGlobalObject('_$$plugin_db', {
             $$query: true,
             query: async function(db, sql, params){
-                return new Promise(function(resolve, reject){
-                    var connection = getConnection(db);
-                    connection.query(sql, params, function(err, result){
-                        if (err)
-                            reject(err)
-                        else
-                            resolve(JSON.stringify(result))
-                    })
+                return new Promise(function(resolve, reject){                    
+                    let connection = getConnection(db);
+                    if (connection){
+                        connection.query(sql, params, function(err, result){
+                            if (err){                                
+                                reject(err)
+                            }
+                            else
+                                resolve(JSON.stringify(result))
+                        })
+                    }     
+                    else
+                        reject('$database_not_defined');
                 })        
             },
             $$beginTransaction: true,
             beginTransaction: function(db){
                 return new Promise(function(resolve, reject){
-                    var connection = getConnection(db);
+                    let connection = getConnection(db);
                     connection.beginTransaction(function(err){
                         if (err)
                             reject(err)
@@ -107,8 +133,8 @@ module.exports = {
             $$commit: true,
             commit: function(db){
                 return new Promise(function(resolve, reject){
-                    var connection = getConnection(db);
-                    connection.commit(function(err){
+                    let connection = getConnection(db);
+                    connection.commit(function(err){                        
                         if (err)
                             reject(err)
                         else
@@ -119,8 +145,8 @@ module.exports = {
             $$rollback: true,
             rollback: function(db){
                 return new Promise(function(resolve, reject){
-                    var connection = getConnection(db);
-                    connection.rollback(function(err){
+                    let connection = getConnection(db);
+                    connection.rollback(function(err){                        
                         if (err)
                             reject(err)
                         else
@@ -133,8 +159,11 @@ module.exports = {
                 getConnection: function(name){
                     return {
                         query: async function(sql, params){
-                            var result = await _$$plugin_db.query(name, sql, params);
-                            return JSON.parse(result);
+                            try{
+                                let result = await _$$plugin_db.query(name, sql, params);
+                                return JSON.parse(result);
+                            }
+                            catch(err){}                            
                         },
                         beginTransaction: function(){
                             return _$$plugin_db.beginTransaction(name);
@@ -146,8 +175,8 @@ module.exports = {
                             return _$$plugin_db.rollback(name);
                         }
                     }
-                }	
-            }
+                }                
+            };
         } + ';init()')
     },
     getDatabase: function(name){        
