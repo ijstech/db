@@ -159,11 +159,8 @@ module.exports = {
                 getConnection: function(name){
                     return {
                         query: async function(sql, params){
-                            try{
-                                let result = await _$$plugin_db.query(name, sql, params);
-                                return JSON.parse(result);
-                            }
-                            catch(err){}                            
+                            let result = await _$$plugin_db.query(name, sql, params);
+                            return JSON.parse(result);              
                         },
                         beginTransaction: function(){
                             return _$$plugin_db.beginTransaction(name);
